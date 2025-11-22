@@ -137,7 +137,8 @@ if menu == "📰 Global News Aggregator":
         with st.spinner(f"Fetching latest {selected_commodity} news from {region_code} sources..."):
             news_data = fetch_news(selected_commodity, region=region_code)
         
-        if not news_items:
+        # FIX: Changed 'news_items' to 'news_data'
+        if not news_data:
             st.info("No recent news found. Try a different region.")
         
         # Display Cards
