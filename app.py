@@ -5,6 +5,7 @@ import plotly.express as px
 import numpy as np
 import time
 import textwrap
+import yfinance as yf
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
@@ -156,30 +157,51 @@ def get_sector_insights(commodity):
     default = [{"Sector": "General Market", "Share": "100%", "Status": "⚪ Normal", "Dynamics": "Market balanced."}]
     return pd.DataFrame(insights.get(commodity, default))
 
+@st.cache_data(ttl=3600)
 def get_price_history(commodity):
-    """Generates mock price history (Sparkline) for the selected commodity."""
-    dates = pd.date_range(end=pd.Timestamp.now(), periods=90)
-    
-    # Base prices (Approximate USD or Index values)
-    base_price = {
-        "Hazelnuts": 750, # Index
-        "Cocoa": 9200,    # USD/MT (High)
-        "Avocados": 45,   # Box
-        "Coffee": 240,    # Cents/lb
-        "Wheat": 580,     # Cents/bu
-        "Corn": 430,
-        "Soybeans": 1150,
-        "Palm Oil": 3900,
-        "Cotton": 82,
-        "Sugar": 22
-    }.get(commodity, 100) # Default for custom
+    """
+    Fetches REAL price history from Yahoo Finance for listed commodities.
+    Uses mock simulation for unlisted commodities (Hazelnuts, Avocados).
+    """
+    # Map Commodity Names to Yahoo Finance Tickers
+    ticker_map = {
+        "Cocoa": "CC=F",      # ICE Cocoa Futures
+        "Coffee": "KC=F",     # Coffee C Futures
+        "Wheat": "ZW=F",      # Chicago Wheat
+        "Corn": "ZC=F",       # Corn Futures
+        "Soybeans": "ZS=F",   # Soybean Futures
+        "Cotton": "CT=F",     # Cotton No. 2
+        "Sugar": "SB=F",      # Sugar No. 11
+        "Palm Oil": "FCPO.KL" # Bursa Malaysia (Might require different data permission, fallback mock if fails)
+    }
 
-    # Create random walk with trend
+    ticker = ticker_map.get(commodity)
+
+    if ticker:
+        try:
+            # Fetch real data (last 3 months)
+            df = yf.download(ticker, period="3mo", interval="1d", progress=False)
+            if not df.empty:
+                df = df.reset_index()
+                # Ensure we just get Date and Close
+                df = df[['Date', 'Close']]
+                df.columns = ['Date', 'Price']
+                return df
+        except Exception:
+            pass # Fallback to mock if API fails
+
+    # --- MOCK FALLBACK (For Hazelnuts, Avocados, or API Errors) ---
+    dates = pd.date_range(end=pd.Timestamp.now(), periods=90)
+    base_price = {
+        "Hazelnuts": 750, 
+        "Avocados": 45, 
+        "Palm Oil": 3900 # Fallback
+    }.get(commodity, 100)
+
     prices = [base_price]
-    np.random.seed(42) # For consistent "random" charts per reload
+    np.random.seed(42) 
     for _ in range(89):
-        # Add commodity-specific volatility
-        volatility = base_price * 0.025
+        volatility = base_price * 0.02
         change = np.random.normal(0, volatility)
         prices.append(max(0, prices[-1] + change))
     
@@ -281,22 +303,29 @@ with c_table:
         }
     )
     
-    # 2. Price Chart (New)
+    # 2. Price Chart (Now REAL for Listed, MOCK for Unlisted)
     st.write("") # Spacer
     st.markdown("**📉 90-Day Price Trend**")
     price_df = get_price_history(selected_commodity)
     
+    # Calculate Trend
+    start_price = price_df.iloc[0]['Price']
+    end_price = price_df.iloc[-1]['Price']
+    delta = ((end_price - start_price) / start_price) * 100
+    color = '#2ecc71' if delta >= 0 else '#e74c3c' # Green if up, Red if down
+    
     # Create Google-style Sparkline Area Chart
     fig_price = px.area(price_df, x='Date', y='Price', height=150)
-    fig_price.update_traces(line_color='#4a90e2', fillcolor='rgba(74, 144, 226, 0.2)')
+    fig_price.update_traces(line_color=color, fillcolor=color.replace(')', ', 0.1)').replace('rgb', 'rgba'))
     fig_price.update_layout(
-        margin=dict(l=0, r=0, t=10, b=0),
+        margin=dict(l=0, r=0, t=20, b=0),
         xaxis_title=None,
         yaxis_title=None,
         showlegend=False,
         plot_bgcolor='white',
         xaxis=dict(showgrid=False, showticklabels=False), # Minimalist axis
-        yaxis=dict(showgrid=True, gridcolor='#eee', showticklabels=True)
+        yaxis=dict(showgrid=True, gridcolor='#eee', showticklabels=True),
+        title=dict(text=f"Trend: {delta:+.2f}%", font=dict(size=12, color=color), x=0.05, y=0.95)
     )
     st.plotly_chart(fig_price, use_container_width=True, config={'displayModeBar': False})
 
