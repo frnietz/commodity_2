@@ -5,6 +5,7 @@ import plotly.express as px
 import numpy as np
 import time
 import textwrap
+from bs4 import BeautifulSoup
 
 # --- PAGE CONFIGURATION ---
 st.set_page_config(
@@ -29,7 +30,7 @@ hide_streamlit_style = textwrap.dedent("""
         border-radius: 12px;
         padding: 20px;
         margin-bottom: 20px;
-        height: 220px;
+        height: 320px; /* Increased height for summary */
         display: flex;
         flex-direction: column;
         justify-content: space-between;
@@ -41,22 +42,37 @@ hide_streamlit_style = textwrap.dedent("""
         box-shadow: 0 10px 20px rgba(0,0,0,0.1);
         border-color: #4a90e2;
     }
-    .news-title {
-        font-size: 16px;
-        font-weight: 700;
-        color: #2c3e50;
-        line-height: 1.4;
-        overflow: hidden;
-        display: -webkit-box;
-        -webkit-line-clamp: 3;
-        -webkit-box-orient: vertical;
-    }
     .news-meta {
         font-size: 11px;
         color: #95a5a6;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+        font-weight: 600;
+    }
+    .news-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: #2c3e50;
+        line-height: 1.3;
+        margin-bottom: 10px;
+        /* Limit title to 2 lines */
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+    }
+    .news-summary {
+        font-size: 13px;
+        color: #555;
+        line-height: 1.5;
+        margin-bottom: 15px;
+        flex-grow: 1;
+        /* Limit summary to 4 lines */
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 4;
+        -webkit-box-orient: vertical;
     }
     .read-more-btn {
         background-color: #f8f9fa;
@@ -259,12 +275,28 @@ def fetch_news(query, region='Global'):
     for entry in feed.entries:
         published_parsed = entry.get('published_parsed', time.gmtime())
         date_str = time.strftime("%d %b %Y", published_parsed)
+        
+        # EXTRACT & CLEAN SUMMARY
+        raw_summary = entry.get('summary', '')
+        clean_summary = ""
+        if raw_summary:
+            try:
+                soup = BeautifulSoup(raw_summary, "html.parser")
+                clean_summary = soup.get_text()
+                # Remove common Google News prefix like "Source - " if simple heuristics allow, 
+                # but raw text is usually safer to avoid deleting real content.
+                if len(clean_summary) > 200: # Truncate for UI
+                    clean_summary = clean_summary[:200] + "..."
+            except Exception:
+                clean_summary = raw_summary[:200]
+        
         news_items.append({
             'title': entry.title,
             'link': entry.link,
             'published': date_str,
             'timestamp': published_parsed,
-            'source': entry.source.title if 'source' in entry else 'Google News'
+            'source': entry.source.title if 'source' in entry else 'Google News',
+            'summary': clean_summary
         })
     news_items.sort(key=lambda x: x['timestamp'], reverse=True)
     return news_items[:12]
@@ -373,11 +405,13 @@ try:
             cols = st.columns(3)
             for idx, item in enumerate(row_items):
                 with cols[idx]:
+                    # Generate Summary-Enhanced Card
                     html_content = textwrap.dedent(f"""
                         <div class="news-card">
                             <div>
                                 <div class="news-meta">{item['source']} • {item['published']}</div>
                                 <div class="news-title">{item['title']}</div>
+                                <div class="news-summary">{item['summary']}</div>
                             </div>
                             <a href="{item['link']}" target="_blank" class="read-more-btn">
                                 Read Article ↗
