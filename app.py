@@ -129,31 +129,31 @@ def get_sector_insights(commodity):
     """Returns sector usage, status, dynamics, and outlook."""
     insights = {
         "Hazelnuts": [
-            {"Sector": "Confectionery", "Share": "80%", "Status": "🔴 Stressed", "Dynamics": "Supply shock due to frost."},
-            {"Sector": "Snacks & Retail", "Share": "15%", "Status": "🟡 Caution", "Dynamics": "Margins squeezing."},
-            {"Sector": "Cosmetics", "Share": "5%", "Status": "🟢 Stable", "Dynamics": "Niche market stable."}
+            {"Sector": "Confectionery", "Share": 80, "Status": "🔴 Stressed", "Dynamics": "Supply shock due to frost."},
+            {"Sector": "Snacks & Retail", "Share": 15, "Status": "🟡 Caution", "Dynamics": "Margins squeezing."},
+            {"Sector": "Cosmetics", "Share": 5, "Status": "🟢 Stable", "Dynamics": "Niche market stable."}
         ],
         "Cocoa": [
-            {"Sector": "Chocolate Mfg", "Share": "65%", "Status": "🔴 Critical", "Dynamics": "Structural deficit."},
-            {"Sector": "Cosmetics", "Share": "15%", "Status": "🟢 Growing", "Dynamics": "Clean beauty trend."}
+            {"Sector": "Chocolate Mfg", "Share": 65, "Status": "🔴 Critical", "Dynamics": "Structural deficit."},
+            {"Sector": "Cosmetics", "Share": 15, "Status": "🟢 Growing", "Dynamics": "Clean beauty trend."}
         ],
         "Avocados": [
-            {"Sector": "Fresh Retail", "Share": "85%", "Status": "🟢 Bullish", "Dynamics": "Super Bowl demand."},
-            {"Sector": "Oil Processing", "Share": "10%", "Status": "🟢 Emerging", "Dynamics": "Replacing olive oil."}
+            {"Sector": "Fresh Retail", "Share": 85, "Status": "🟢 Bullish", "Dynamics": "Super Bowl demand."},
+            {"Sector": "Oil Processing", "Share": 10, "Status": "🟢 Emerging", "Dynamics": "Replacing olive oil."}
         ],
         "Coffee": [
-            {"Sector": "Specialty Roasters", "Share": "20%", "Status": "🟠 Strained", "Dynamics": "High bean prices."},
-            {"Sector": "Instant/Commercial", "Share": "45%", "Status": "🟢 Stable", "Dynamics": "Robust hedging."}
+            {"Sector": "Specialty Roasters", "Share": 20, "Status": "🟠 Strained", "Dynamics": "High bean prices."},
+            {"Sector": "Instant/Commercial", "Share": 45, "Status": "🟢 Stable", "Dynamics": "Robust hedging."}
         ],
         "Wheat": [
-            {"Sector": "Milling & Baking", "Share": "60%", "Status": "🟡 Volatile", "Dynamics": "Geopolitical risk."}
+            {"Sector": "Milling & Baking", "Share": 60, "Status": "🟡 Volatile", "Dynamics": "Geopolitical risk."}
         ],
         "Corn": [
-            {"Sector": "Animal Feed", "Share": "55%", "Status": "🟢 Abundant", "Dynamics": "Record crops."},
-            {"Sector": "Ethanol", "Share": "35%", "Status": "🟡 Risk", "Dynamics": "EV transition threat."}
+            {"Sector": "Animal Feed", "Share": 55, "Status": "🟢 Abundant", "Dynamics": "Record crops."},
+            {"Sector": "Ethanol", "Share": 35, "Status": "🟡 Risk", "Dynamics": "EV transition threat."}
         ]
     }
-    default = [{"Sector": "General Market", "Share": "100%", "Status": "⚪ Normal", "Dynamics": "Market balanced."}]
+    default = [{"Sector": "General Market", "Share": 100, "Status": "⚪ Normal", "Dynamics": "Market balanced."}]
     return pd.DataFrame(insights.get(commodity, default))
 
 def get_commodity_facts(commodity):
@@ -322,7 +322,12 @@ with c_table:
         hide_index=True,
         column_config={
             "Status": st.column_config.TextColumn("Health", help="Current sector health"),
-            "Share": st.column_config.ProgressColumn("Usage %", format="%s", min_value=0, max_value=100),
+            "Share": st.column_config.ProgressColumn(
+                "Usage Share", 
+                format="%d%%", 
+                min_value=0, 
+                max_value=100
+            ),
         }
     )
     
