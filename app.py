@@ -337,7 +337,7 @@ with tab_map:
     if not map_df.empty:
         fig = px.scatter_mapbox(
             map_df, lat="Lat", lon="Lon", color="Risk",
-            size=pd.Series([20]*len(map_df)), hover_name="Region",
+            size=pd.Series([10]*len(map_df)), hover_name="Region",
             hover_data={"Output": True, "Lat": False, "Lon": False},
             color_discrete_map={
                 'Critical (Frost)': '#d62728', 'High (Frost)': '#ff7f0e',
